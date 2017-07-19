@@ -1,0 +1,227 @@
+<!-- This demo is invitation to Instanssi (demoparty in Jyväskylä). It is made to AltParty 2013, which's theme was hospital. 
+Demo was third in the beginner demo compo. 
+Made with three.js
+Made by: Tinuzka & k2h -->
+
+<html>
+    <head>
+        <style>
+            .body {margin:0; padding:0}
+            canvas {padding:0; margin:0; position:absolute;top:0;left:0}
+        </style>
+    </head>
+	<body>
+        <!-- Needed libraries -->
+		<script src="lib/three.min.js"></script>
+		<script src="lib/stats.min.js"></script>
+        <!-- Effects to the demo -->
+		<script src="effects/spinning_eq_cube.js"></script>
+		<script src="effects/MassivText.js"></script>
+		<script src="effects/textpingpong.js"></script>
+        <script src="effects/betweenText.js"></script>
+        <script src="effects/heatAttack.js"></script>
+        <script src="effects/blindness.js"></script>
+        <script src="effects/deafness.js"></script>
+        <script src="effects/greets.js"></script>
+        <script src="effects/epilepsy.js"></script>
+        <script src="effects/sceneClear.js"></script>
+        <script src="effects/bouncingText.js"></script>
+        <!-- Fonts for the demo -->
+		<script type="text/javascript" src="fonts/helvetiker_regular.typeface.js"></script>
+		<script type="text/javascript" src="fonts/helvetiker_bold.typeface.js"></script>
+        <!-- Music for the effects. Id tells which number the effectIndex is, when the audio starts to play. -->
+		<audio id="1" src="sound/start.mp3"></audio>
+		<audio id="2" src="sound/long.mp3"></audio>
+		<audio id="3" src="sound/start.mp3"></audio>
+		<audio id="4" src="sound/long.mp3"></audio>
+		<audio id="5" src="sound/long.mp3"></audio>
+		<audio id="6" src="sound/long.mp3"></audio>
+		<audio id="7" src="sound/long.mp3"></audio>
+		<audio id="8" src="sound/hearing.mp3"></audio>
+		<audio id="9" src="sound/long.mp3"></audio>
+		<audio id="10" src="sound/long.mp3"></audio>
+		<audio id="11" src="sound/long.mp3"></audio>
+		<audio id="12" src="sound/beep.mp3"></audio>
+		<audio id="13" src="sound/long.mp3"></audio>
+		<audio id="glitchsound" src="sound/glitch.mp3"></audio>
+		<script>
+	
+			//Array for the demo effects. Effects are shown in the ordere they are in the array.
+			var effectArray = {};
+			//Things are drawn only if this is true
+			var demoOn = true;
+            //Demoeffect which is now going on
+			var demoEffect;
+            //Number of the next effect shown from array
+			var effectIndex = 1;
+			
+			//Listens when the effect in turn has reached to end and is time to change to next effect.
+			document.addEventListener("effectEnd", effectEndHandler, false);
+            //Listens when the glitch effect starts and ends, because it's middle of one of the effects so the effect doesen't change normally for glitch. Starts and stops the sound for the effect.
+			document.addEventListener("glitch", glitchSoundHandler, false);
+			document.addEventListener("glitchEnd", glitchSoundEndHandler, false);
+			
+			function glitchSoundHandler(e) {
+				document.getElementById(effectIndex.toString()).pause();
+				document.getElementById("glitchsound").play();
+			}
+			
+			function glitchSoundEndHandler(e) {			
+				document.getElementById(effectIndex.toString()).play();
+				document.getElementById("glitchsound").pause();
+			}
+            
+            //Clears the old effect and starts the next one
+			function effectEndHandler(e)
+			{
+                //Stops the music for the effect
+                if (document.getElementById(effectIndex.toString()) != null)
+					document.getElementById(effectIndex.toString()).pause();
+				demoEffect.delete();
+				demoEffect = effectArray[effectIndex];
+				demoEffect.start();
+				if(effectIndex<effectArray.length) effectIndex++;
+                
+                //Starts the music for the new effect
+				if (document.getElementById(effectIndex.toString()) != null)
+					document.getElementById(effectIndex.toString()).play();
+            }
+            
+            try {
+			//Setup renderer
+			var renderer = new THREE.WebGLRenderer({antialias: true});
+			renderer.setSize(window.screen.availWidth,window.screen.availHeight);
+			document.body.appendChild(renderer.domElement);
+			renderer.setClearColor(0xEEEEEE, 1.0);
+			renderer.clear();
+			
+			renderer.shadowCameraFov = 50;
+			renderer.shadowMapWidth = 1024;;
+			renderer.shadowMapHeight = 1024;
+			renderer.shadowMapEnabled = true;
+
+			//Setup camera
+			var fov = 45; // camera field-of-view in degrees
+			var width = renderer.domElement.width;
+			var height = renderer.domElement.height;
+			var aspect = width / height; // view aspect ratio
+			var near = 1; // near clip plane
+			var far = 10000; // far clip plane
+			var camera = new THREE.PerspectiveCamera( fov, aspect, near, far );
+			camera.position.z = 0;
+			camera.position.x = 0;
+			camera.position.y = 0;
+			
+			//Define scene
+			var scene = new THREE.Scene();
+			
+			//Create light
+			var light = new THREE.SpotLight();
+			light.castShadow = true;
+			light.position.set( 170, 330, -160 );
+			scene.add(light);
+            
+			renderer.render(scene, camera);
+			
+            //Last effect, which draws nothing to screen
+			function EndEffect()
+			{	
+				this.start = function () {
+				demoOn = false;
+				}
+				
+				this.animate = function () {
+				demoOn = false;
+				}
+			}
+			
+            //Function to draw two effects simultaniously. Does glitch, when ???
+			function Combain(effect1, effect2)
+			{
+                //Measures the length of the glitch effects
+				var t = 0;
+                //Variable for the glitch effect
+				var c = true;
+                //Saves the start time of the effect
+				var start;
+                //Is glitch effect on?
+				var glitch;
+				
+				this.start = function()
+				{
+					glitch = false;
+					start = new Date().getTime();
+					effect1.start();
+					effect2.start();
+					document.addEventListener("glitch", this.glitchHandler, false);
+				}
+				
+				this.animate = function()
+				{	
+					if (glitch) {
+						t = new Date().getTime() - start;
+						if (c) {
+							effect1.animate(true);
+							effect2.animate(true);
+							c = false;
+						}
+						else {
+							effect1.animate(false);
+							effect2.animate(false);
+							c = true;
+						}
+						if (t > 5000) {
+							glitch = false;
+							document.dispatchEvent(new Event("glitchEnd"));
+						}
+					}
+					else {
+						effect1.animate();
+						effect2.animate();
+						c = true;
+					}
+				}
+				
+				this.delete = function()
+				{
+					effect1.delete();
+					effect2.delete();
+				}
+				
+                //Is this used?
+				this.glitchHandler = function(e)
+				{
+					glitch = true;
+					start = new Date().getTime();
+				}
+			}
+
+			//Create effects to the array
+			effectArray = [new TextEffect(["INSTANSSI"]), new sEqCube(10000), new MassiveText("INSTANSSI", 40, 350), new Combain(new ValiTextEffect(["Like you have never seen before!", "It will be legendary!", "You may experience:"], 20), new TextPingPong("INSTANSSI"), true),
+            new epilepsy(), new blindness(), new wait(1000), new deafness(), new HeartAttackText(), new sEqCube(6000), new greets(["Coding:", "Tinuzka", "k2h", "90% party production", "Instanssi 2014"]), new wait(5500), new sEqCube(3000), new sceneClear()];
+            
+            //Start the first effect
+			demoEffect = effectArray[0];
+			demoEffect.start();
+			document.getElementById("1").play();
+			
+            //Draws the current effect
+			function animate() {	
+				if(demoOn){
+					demoEffect.animate();
+					renderer.clear();
+					camera.lookAt(scene.position);
+					renderer.render(scene, camera);
+					window.requestAnimationFrame(animate, renderer.domElement);
+				}
+			};
+			
+            //Draw!
+			animate();
+		}
+		catch (e) {
+			alert(e.message);
+		}
+		</script>
+	</body>
+</html>
